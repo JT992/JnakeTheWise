@@ -1,10 +1,14 @@
 import tweepy
 import random
 from keys import API_KEY, API_SEC, ACC_KEY, ACC_SEC
+from time import sleep
 
-auth = tweepy.OAuthHandler(API_KEY, API_SEC)
-auth.set_access_token(ACC_KEY, ACC_SEC)
-api = tweepy.API(auth)
+client = tweepy.Client(
+    consumer_key=API_KEY,
+    consumer_secret=API_SEC,
+    access_token=ACC_KEY,
+    access_token_secret=ACC_SEC
+)
 
 # Object formatting:
 # str = regular count noun
@@ -70,3 +74,25 @@ def generate_wisdom():
             continue
         base[index] = replace
     return ''.join(base)
+
+
+def get_last_id():
+    with open('last_id.txt', 'r') as f:
+        val = int(f.read().strip())
+    return val
+
+
+def set_last_id(val):
+    with open('last_id.txt', 'w') as f:
+        f.write(str(val))
+
+
+# Respond to tweets sent while down
+last_id = get_last_id()
+mentions = client.get_users_mentions(id='1430831783675826177', since_id=last_id)
+print(mentions)
+for mention in reversed(mentions):
+    last_id = mention.id
+    client.create_tweet(text=f'Hi @{mention.user.username}! Sorry if it\'s been a while. Your Personal Wisdom today is:'
+                             f'\n\n{generate_wisdom()}"\n\nHave a nice day!', in_reply_to_tweet_id=mention.id)
+set_last_id(last_id)

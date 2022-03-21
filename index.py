@@ -1,9 +1,10 @@
 import tweepy
 import random
-from keys import API_KEY, API_SEC, ACC_KEY, ACC_SEC
+from keys import BEARER, ACC_KEY, ACC_SEC, API_KEY, API_SEC
 from time import sleep
 
 client = tweepy.Client(
+    bearer_token=BEARER,
     consumer_key=API_KEY,
     consumer_secret=API_SEC,
     access_token=ACC_KEY,
@@ -49,7 +50,6 @@ templates = ('Fry the whole *OBJECT*.', '*PERSON* is a *OBJECT*.', '*PERSON* may
              'Apologise to your *OBJECTS*.', '*PERSON* has done so much for you. Think about them today.',
              'The best advice you\'ll receive involves *OBJECTS*.',
              'Your *OBJECT* is perfect, no matter what *PERSON* says.', '*PERSON*? *PERSON*? *PERSON*?',
-             'I can\'t assist you with your *OBJECT* and neither can *PERSON*.',
              'When did that *OBJECT* first make sense to you?', 'Everything you know about *OBJECTS* is wrong.',
              'You\'ve never thought about *OBJECTS*?', '*PERSON* doesn\'t believe in you. Show them they\'re wrong.',
              'Rethink your whole position on *PERSON*.', 'Rethink your whole position on *OBJECTS*.')
@@ -87,12 +87,20 @@ def set_last_id(val):
         f.write(str(val))
 
 
-# Respond to tweets sent while down
-last_id = get_last_id()
-mentions = client.get_users_mentions(id='1430831783675826177', since_id=last_id)
-print(mentions)
-for mention in reversed(mentions):
-    last_id = mention.id
-    client.create_tweet(text=f'Hi @{mention.user.username}! Sorry if it\'s been a while. Your Personal Wisdom today is:'
-                             f'\n\n{generate_wisdom()}"\n\nHave a nice day!', in_reply_to_tweet_id=mention.id)
-set_last_id(last_id)
+def main():
+    last_id = get_last_id()
+    mentions = client.get_users_mentions(id='1430831783675826177', since_id=last_id)
+    print(mentions)
+    if mentions.data is None:
+        return
+    for mention in reversed(mentions.data):
+        last_id = mention.id
+        tweet = client.get_tweet(id=last_id, expansions='author_id')
+        user = tweet.includes['users']
+        client.create_tweet(text=f'Hi @{user[0].username}! Your Personal Wisdom today is:'
+                                 f'\n\n"{generate_wisdom()}"\n\nHave a nice day!', in_reply_to_tweet_id=last_id)
+    set_last_id(last_id)
+
+
+if __name__ == '__main__':
+    main()

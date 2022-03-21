@@ -1,7 +1,8 @@
 import tweepy
 import random
-from keys import BEARER, ACC_KEY, ACC_SEC, API_KEY, API_SEC
+from keys import BEARER, ACC_KEY, ACC_SEC, API_KEY, API_SEC, ACCOUNT_ID
 from time import sleep
+from datetime import datetime, timezone
 
 client = tweepy.Client(
     bearer_token=BEARER,
@@ -24,7 +25,7 @@ objects = (['goose', 'geese'], 'puddle', ['box', 'boxes'], 'pavement', 'turtle',
            ['butter knife', 'butter knives'], 'boat', ['fish'], 'teddy bear', ['paintbrush', 'paintbrushes'],
            'harmonica', 'desk', 'door', 'pillow', 'unicorn', 'button', 'belt', 'radio', 'locket', 'key', 'hat',
            'quartz crystal', 'bracelet', 'spoon', ['chalk'], 'spanner', ['perfume'], ['soup'], ['cheese'],
-           ['tin of baked beans', 'tins of baked beans'])
+           ['tin of baked beans', 'tins of baked beans'], 'lemon')
 
 # People
 # noinspection SpellCheckingInspection
@@ -55,6 +56,19 @@ templates = ('Fry the whole *OBJECT*.', '*PERSON* is a *OBJECT*.', '*PERSON* may
              'Rethink your whole position on *PERSON*.', 'Rethink your whole position on *OBJECTS*.')
 
 
+# Sections of General Wisdom greetings
+gw_first = ('Hi everyone!', 'Hello everyone!', 'Hi all!', 'Hello all!', 'Good afternoon, students!',
+            'Good day, students!', 'Good afternoon, wise ones!', 'Good day, wise ones!', 'Good afternoon, Twitter!',
+            'Good day, Twitter!')
+gw_second = ('Ready for today\'s General Wisdom?', 'It\'s time for today\'s General Wisdom.',
+             'Get ready for today\'s General Wisdom.', 'Time for today\'s General Wisdom.',
+             'Prepare for today\'s General Wisdom!', 'Behold today\'s General Wisdom.')
+gw_third = ('Here goes:', 'Behold:', 'Heed it:', 'And it says:', 'It is:', 'I decree:', 'Bask in its glory:',
+            'Prepare yourselves, it\'s a big one:')
+gw_final = ('I know, right?', 'Powerful stuff.', 'Enjoy.', 'Good luck!', 'Have a nice day!', 'Have a wonderful day!',
+            'I will see you tomorrow, students.', 'Let that sink in.')
+
+
 def generate_wisdom():
     base = random.choice(templates).split('*')
     for index, segment in enumerate(base):
@@ -76,6 +90,11 @@ def generate_wisdom():
     return ''.join(base)
 
 
+def generate_general():
+    return f'{random.choice(gw_first)} {random.choice(gw_second)} {random.choice(gw_third)}' \
+           f'\n\n"{generate_wisdom()}"\n\n{random.choice(gw_final)}'
+
+
 def get_last_id():
     with open('last_id.txt', 'r') as f:
         val = int(f.read().strip())
@@ -87,20 +106,32 @@ def set_last_id(val):
         f.write(str(val))
 
 
+def post_general():
+    pass  # add in next commit
+
+
 def main():
     last_id = get_last_id()
-    mentions = client.get_users_mentions(id='1430831783675826177', since_id=last_id)
+    mentions = client.get_users_mentions(
+        id=ACCOUNT_ID,
+        since_id=last_id,
+    )
     print(mentions)
+    now = datetime.now(timezone.utc)
+    if now.hour == 5 and now.minute == 0:
+        post_general()
     if mentions.data is None:
         return
     for mention in reversed(mentions.data):
         last_id = mention.id
         tweet = client.get_tweet(id=last_id, expansions='author_id')
         user = tweet.includes['users']
-        client.create_tweet(text=f'Hi @{user[0].username}! Your Personal Wisdom today is:'
+        client.create_tweet(text=f'Hi @{user[0].username}! Your Personal Wisdom is:'
                                  f'\n\n"{generate_wisdom()}"\n\nHave a nice day!', in_reply_to_tweet_id=last_id)
     set_last_id(last_id)
 
 
 if __name__ == '__main__':
-    main()
+    while True:
+        main()
+        sleep(60)  # don't want to go over the tweet cap!

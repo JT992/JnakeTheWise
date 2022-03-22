@@ -53,7 +53,8 @@ templates = ('Fry the whole *OBJECT*.', '*PERSON* is a *OBJECT*.', '*PERSON* may
              'Your *OBJECT* is perfect, no matter what *PERSON* says.', '*PERSON*? *PERSON*? *PERSON*?',
              'When did that *OBJECT* first make sense to you?', 'Everything you know about *OBJECTS* is wrong.',
              'You\'ve never thought about *OBJECTS*?', '*PERSON* doesn\'t believe in you. Show them they\'re wrong.',
-             'Rethink your whole position on *PERSON*.', 'Rethink your whole position on *OBJECTS*.')
+             'Rethink your whole position on *PERSON*.', 'Rethink your whole position on *OBJECTS*.',
+             '*PERSON* lives in a *OBJECT*.', 'Only *PERSON* can help you.', 'Only that *OBJECT* will help you.')
 
 
 # Sections of General Wisdom greetings
@@ -77,17 +78,20 @@ def generate_wisdom():
             if isinstance(replace, list):
                 replace = replace[0]
         elif segment == 'OBJECTS':
-            replace = random.choice(objects)
-            if isinstance(replace, str):
-                replace = f'{replace}s'
-            else:
-                replace = replace[0] if len(replace) == 1 else replace[1]
+            replace = plural_object()
         elif segment == 'PERSON':
             replace = random.choice(people)
         else:
             continue
         base[index] = replace
     return ''.join(base)
+
+
+def plural_object():
+    replace = random.choice(objects)
+    if isinstance(replace, str):
+        return f'{replace}s'
+    return replace[0] if len(replace) == 1 else replace[1]
 
 
 def generate_general():

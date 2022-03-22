@@ -127,15 +127,16 @@ def main():
         return
     for mention in reversed(mentions.data):
         last_id = mention.id
-        tweet = client.get_tweet(id=last_id, expansions='author_id')
-        user = tweet.includes['users']
-        client.create_tweet(text=f'Hi @{user[0].username}! Your Personal Wisdom is:'
-                                 f'\n\n"{generate_wisdom()}"\n\nHave a {random.choice(have_a_day)} day!',
-                            in_reply_to_tweet_id=last_id)
+        if 'wisdom' in mention.text:
+            tweet = client.get_tweet(id=last_id, expansions='author_id')
+            user = tweet.includes['users']
+            client.create_tweet(text=f'Hi @{user[0].username}! Your Personal Wisdom is:'
+                                     f'\n\n"{generate_wisdom()}"\n\nHave a {random.choice(have_a_day)} day!',
+                                in_reply_to_tweet_id=last_id)
     set_last_id(last_id)
 
 
 if __name__ == '__main__':
     while True:
         main()
-        sleep(60)  # don't want to go over the tweet cap!
+        sleep(60)

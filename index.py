@@ -25,7 +25,7 @@ objects = (['goose', 'geese'], 'puddle', ['box', 'boxes'], 'pavement', 'turtle',
            ['butter knife', 'butter knives'], 'boat', ['fish'], 'teddy bear', ['paintbrush', 'paintbrushes'],
            'harmonica', 'desk', 'door', 'pillow', 'unicorn', 'button', 'belt', 'radio', 'locket', 'key', 'hat',
            'quartz crystal', 'bracelet', 'spoon', ['chalk'], 'spanner', ['perfume'], ['soup'], ['cheese'],
-           ['tin of baked beans', 'tins of baked beans'], 'lemon')
+           ['tin of baked beans', 'tins of baked beans'], 'lemon', 'metronome', 'glockenspiel')
 
 # People
 # noinspection SpellCheckingInspection
@@ -65,8 +65,8 @@ gw_second = ('Ready for today\'s General Wisdom?', 'It\'s time for today\'s Gene
              'Prepare for today\'s General Wisdom!', 'Behold today\'s General Wisdom.')
 gw_third = ('Here goes:', 'Behold:', 'Heed it:', 'And it says:', 'It is:', 'I decree:', 'Bask in its glory:',
             'Prepare yourselves, it\'s a big one:')
-gw_final = ('I know, right?', 'Powerful stuff.', 'Enjoy.', 'Good luck!', 'Have a nice day!', 'Have a wonderful day!',
-            'I will see you tomorrow, students.', 'Let that sink in.')
+
+have_a_day = ('wonderful', 'marvellous', 'fantastic', 'terrific', 'tremendous', 'fabulous', 'phenomenal')
 
 
 def generate_wisdom():
@@ -92,7 +92,11 @@ def generate_wisdom():
 
 def generate_general():
     return f'{random.choice(gw_first)} {random.choice(gw_second)} {random.choice(gw_third)}' \
-           f'\n\n"{generate_wisdom()}"\n\n{random.choice(gw_final)}'
+           f'\n\n"{generate_wisdom()}"\n\nHave a {random.choice(have_a_day)} day!'
+
+
+def post_general():
+    client.create_tweet(text=generate_general())
 
 
 def get_last_id():
@@ -106,17 +110,12 @@ def set_last_id(val):
         f.write(str(val))
 
 
-def post_general():
-    pass  # add in next commit
-
-
 def main():
     last_id = get_last_id()
     mentions = client.get_users_mentions(
         id=ACCOUNT_ID,
-        since_id=last_id,
+        since_id=last_id
     )
-    print(mentions)
     now = datetime.now(timezone.utc)
     if now.hour == 5 and now.minute == 0:
         post_general()
@@ -127,7 +126,8 @@ def main():
         tweet = client.get_tweet(id=last_id, expansions='author_id')
         user = tweet.includes['users']
         client.create_tweet(text=f'Hi @{user[0].username}! Your Personal Wisdom is:'
-                                 f'\n\n"{generate_wisdom()}"\n\nHave a nice day!', in_reply_to_tweet_id=last_id)
+                                 f'\n\n"{generate_wisdom()}"\n\nHave a {random.choice(have_a_day)} day!',
+                            in_reply_to_tweet_id=last_id)
     set_last_id(last_id)
 
 

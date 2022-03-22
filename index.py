@@ -127,7 +127,7 @@ def main():
         return
     for mention in reversed(mentions.data):
         last_id = mention.id
-        if 'wisdom' in mention.text:
+        if 'wisdom' in mention.text.lower():
             tweet = client.get_tweet(id=last_id, expansions='author_id')
             user = tweet.includes['users']
             client.create_tweet(text=f'Hi @{user[0].username}! Your Personal Wisdom is:'

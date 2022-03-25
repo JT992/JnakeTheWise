@@ -3,6 +3,7 @@ import random
 from keys import BEARER, ACC_KEY, ACC_SEC, API_KEY, API_SEC, ACCOUNT_ID
 from time import sleep
 from datetime import datetime, timezone
+from requests.exceptions import ConnectionError
 
 client = tweepy.Client(
     bearer_token=BEARER,
@@ -11,6 +12,8 @@ client = tweepy.Client(
     access_token=ACC_KEY,
     access_token_secret=ACC_SEC
 )
+
+missed_general = False
 
 # Object formatting:
 # str = regular count noun
@@ -100,7 +103,12 @@ def generate_general():
 
 
 def post_general():
-    client.create_tweet(text=generate_general())
+    global missed_general
+    try:
+        client.create_tweet(text=generate_general())
+    except ConnectionError:
+        missed_general = True
+        raise
 
 
 def get_last_id():
@@ -121,7 +129,7 @@ def main():
         since_id=last_id
     )
     now = datetime.now(timezone.utc)
-    if now.hour == 5 and now.minute == 0:
+    if (now.hour == 5 and now.minute == 0) or missed_general:
         post_general()
     if mentions.data is None:
         return
@@ -133,10 +141,13 @@ def main():
             client.create_tweet(text=f'Hi @{user[0].username}! Your Personal Wisdom is:'
                                      f'\n\n"{generate_wisdom()}"\n\nHave a {random.choice(have_a_day)} day!',
                                 in_reply_to_tweet_id=last_id)
-    set_last_id(last_id)
+            set_last_id(last_id)
 
 
 if __name__ == '__main__':
     while True:
-        main()
+        try:
+            main()
+        except ConnectionError:
+            print(f'Connection error at {datetime.now()}')
         sleep(60)

@@ -1,9 +1,21 @@
 import tweepy
 import random
+import logging
 from keys import BEARER, ACC_KEY, ACC_SEC, API_KEY, API_SEC, ACCOUNT_ID
 from time import sleep
 from datetime import datetime, timezone
 from requests.exceptions import ConnectionError
+
+logger = logging.getLogger(__name__)
+
+formatter = logging.Formatter('[%(asctime)s:%(lineno)d:%(levelname)s] %(message)s')
+
+file_handler = logging.FileHandler('log_jnake.log')
+file_handler.setFormatter(formatter)
+file_handler.setLevel(logging.INFO)
+
+logger.addHandler(file_handler)
+
 
 client = tweepy.Client(
     bearer_token=BEARER,
@@ -106,9 +118,11 @@ def post_general():
     global missed_general
     try:
         client.create_tweet(text=generate_general())
-    except ConnectionError:
+    except (ConnectionError, tweepy.errors.TwitterServerError):
+        logger.exception('Failed to post general wisdom')
         missed_general = True
-        raise
+    else:
+        logger.info('Successfully posted general wisdom')
 
 
 def get_last_id():
@@ -132,6 +146,7 @@ def main():
     if (now.hour == 5 and now.minute == 0) or missed_general:
         post_general()
     if mentions.data is None:
+        logger.info('No mentions returned')
         return
     for mention in reversed(mentions.data):
         last_id = mention.id
@@ -141,7 +156,9 @@ def main():
             client.create_tweet(text=f'Hi @{user[0].username}! Your Personal Wisdom is:'
                                      f'\n\n"{generate_wisdom()}"\n\nHave a {random.choice(have_a_day)} day!',
                                 in_reply_to_tweet_id=last_id)
-            set_last_id(last_id)
+            logger.info('Successfully responded to a personal wisdom request')
+        set_last_id(last_id)
+    logger.info('Successfully responded to all requests from this cycle')
 
 
 if __name__ == '__main__':
@@ -149,5 +166,7 @@ if __name__ == '__main__':
         try:
             main()
         except ConnectionError:
-            print(f'Connection error at {datetime.now()}')
+            logger.exception(f'Connection error at {datetime.now()}')
+        except tweepy.errors.TwitterServerError:
+            logger.exception(f'Twitter server error at {datetime.now()}')
         sleep(60)
